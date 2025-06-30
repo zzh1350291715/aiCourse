@@ -599,21 +599,33 @@ export default {
       this.previewDocument = doc
       this.previewDialogVisible = true
     },
-    
+
+    // KnowledgeBase.vue 中 methods 里，替换原有的 generateOutline()
+
     async generateOutline() {
-      this.generating.outline = true
+      if (!this.currentKb.id) {
+        this.$message.warning('请选择知识库');
+        return;
+      }
+      this.generating.outline = true;
       try {
-        const response = await request.post(`/api/knowledge-base/generate-outline/${this.currentKb.id}`)
+        // 调新接口：POST /api/course-outlines/generate?studentId=...
+        const outlineDto = await request.post(
+            '/api/course-outlines/generate',
+            { courseId: this.currentKb.id },
+            { params: { studentId: this.currentUser.id } }
+        );
+        // 将服务端返回的 DTO 结构保存在 generatedContent
         this.generatedContent = {
           type: 'outline',
-          content: response.outline
-        }
-        this.$message.success('大纲生成成功')
+          content: outlineDto
+        };
+        this.$message.success('课程大纲生成成功');
       } catch (error) {
-        console.error('生成大纲失败:', error)
-        this.$message.error('生成大纲失败')
+        console.error('生成大纲失败:', error);
+        this.$message.error('生成大纲失败');
       } finally {
-        this.generating.outline = false
+        this.generating.outline = false;
       }
     },
     

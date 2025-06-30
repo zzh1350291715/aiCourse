@@ -94,6 +94,11 @@
               <div class="actions">
                 <el-button type="primary" @click="saveOutline">保存大纲</el-button>
                 <el-button @click="editOutline">编辑大纲</el-button>
+                <el-button
+                    type="warning"
+                    @click="suggestOutline"
+                    :loading="generating.suggest"
+                >获取智能建议</el-button>
                 <el-button type="success" @click="exportOutline">导出大纲</el-button>
               </div>
             </div>
@@ -416,7 +421,8 @@ export default {
       generating: {
         outline: false,
         ppt: false,
-        quiz: false
+        quiz: false,
+        suggest: false
       },
       
       // 课程大纲相关
@@ -551,18 +557,19 @@ export default {
     handleTabClick(tab) {
       // 标签页切换处理
     },
-    
+
     async generateOutline() {
-      if (!this.outlineOptions.knowledgeBaseId) {
-        this.$message.warning('请先选择知识库')
+      if (!this.courseId) {
+        this.$message.warning('无法获取课程 ID')
         return
       }
-      
+
       this.generating.outline = true
       try {
         const response = await request.post(
-          `/api/knowledge-base/generate-course-outline/${this.outlineOptions.knowledgeBaseId}`,
-          this.outlineOptions
+            `/api/course-outlines/generate`,
+            { courseId: this.courseId },
+            { params: { studentId: this.user.id } }
         )
         this.generatedOutline = response
         this.$message.success('课程大纲生成成功')
@@ -730,7 +737,33 @@ export default {
         'FAILED': '评分失败'
       }
       return texts[status] || '未知'
+    },
+
+    /**
+     * 获取智能修改建议
+     */
+    async suggestOutline() {
+      if (!this.generatedOutline?.id) {
+        this.$message.warning('请先生成大纲后再获取建议')
+        return
+      }
+      this.generating.suggest = true
+      try {
+        const response = await request.post(
+            `/api/course-outlines/${this.generatedOutline.id}/suggest`,
+            this.generatedOutline,
+            { params: { studentId: this.user.id } }
+        )
+        this.generatedOutline = response
+        this.$message.success('智能建议应用成功')
+      } catch (error) {
+        console.error('获取智能建议失败:', error)
+        this.$message.error('获取智能建议失败')
+      } finally {
+        this.generating.suggest = false
+      }
     }
+
   }
 }
 </script>

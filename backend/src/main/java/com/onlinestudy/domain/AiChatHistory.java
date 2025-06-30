@@ -31,11 +31,11 @@ public class AiChatHistory {
     private Course course;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String question;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String answer;
 
     @CreationTimestamp
