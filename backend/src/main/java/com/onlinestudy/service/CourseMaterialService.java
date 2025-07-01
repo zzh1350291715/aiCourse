@@ -23,6 +23,7 @@ public interface CourseMaterialService {
     CourseMaterial uploadMaterial(MultipartFile file, Long courseId, String title, String type, int order);
     List<CourseMaterial> getMaterialsForCourse(Long courseId);
     CourseMaterial updateMaterial(Long materialId, CourseMaterialDto materialDto);
+    CourseMaterial getMaterial(Long materialId);
     void deleteMaterial(Long materialId);
 }
 
@@ -121,6 +122,12 @@ class CourseMaterialServiceImpl implements CourseMaterialService {
         material.setOrder(materialDto.getOrder());
 
         return materialRepository.save(material);
+    }
+
+    @Override
+    public CourseMaterial getMaterial(Long materialId) {
+        return materialRepository.findById(materialId)
+                .orElseThrow(() -> new EntityNotFoundException("CourseMaterial not found with id: " + materialId));
     }
 
     @Transactional

@@ -325,6 +325,20 @@
           @load="markAsViewed"
         />
         
+        <!-- 文档预览（Word） -->
+        <docx-preview 
+          v-else-if="isDocxFile(currentMaterial)"
+          :url="currentMaterial.contentUrl"
+          @loaded="markAsViewed"
+        />
+        
+        <!-- PPT 预览 -->
+        <ppt-preview
+          v-else-if="isPptFile(currentMaterial)"
+          :url="currentMaterial.contentUrl"
+          @load="markAsViewed"
+        />
+        
         <!-- 其他文件类型 -->
         <div v-else class="preview-placeholder">
           <i class="el-icon-document-copy"></i>
@@ -358,9 +372,15 @@
 <script>
 import request from '@/utils/request'
 import { mapGetters } from 'vuex'
+import DocxPreview from '@/components/DocxPreview.vue'
+import PptPreview from '@/components/PptPreview.vue'
 
 export default {
   name: 'CourseMaterials',
+  components: {
+    DocxPreview,
+    PptPreview
+  },
   data() {
     return {
       course: {},
@@ -507,7 +527,13 @@ export default {
     },
 
     previewMaterial(material) {
-      this.currentMaterial = material
+      // 处理相对路径，转为绝对地址
+      let url = material.contentUrl
+      if (url && !url.startsWith('http')) {
+        const base = process.env.VUE_APP_FILE_BASE || 'http://localhost:8081'
+        url = base.replace(/\/$/, '') + url
+      }
+      this.currentMaterial = { ...material, contentUrl: url }
       this.previewDialogVisible = true
       
       // 如果是学生，记录查看行为
@@ -704,6 +730,18 @@ export default {
         'OTHER': '其他'
       }
       return names[type] || '未知'
+    },
+
+    isDocxFile(material) {
+      if (!material || !material.contentUrl) return false
+      const ext = material.contentUrl.split('.').pop().toLowerCase()
+      return ['doc', 'docx'].includes(ext)
+    },
+
+    isPptFile(material) {
+      if (!material || !material.contentUrl) return false
+      const ext = material.contentUrl.split('.').pop().toLowerCase()
+      return ['ppt', 'pptx'].includes(ext)
     }
   }
 }

@@ -3,11 +3,17 @@ package com.onlinestudy.controller;
 import com.onlinestudy.domain.CourseMaterial;
 import com.onlinestudy.dto.CourseMaterialDto;
 import com.onlinestudy.service.CourseMaterialService;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -85,5 +91,41 @@ public class CourseMaterialController {
     public ResponseEntity<Void> deleteMaterial(@PathVariable Long materialId) {
         materialService.deleteMaterial(materialId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/download/{materialId}")
+    public ResponseEntity<Resource> downloadMaterial(@PathVariable Long materialId) {
+        try {
+            CourseMaterial material = materialService.getMaterial(materialId);
+            String url = material.getContentUrl();
+
+            // 解析文件系统中的实际路径
+            String relativePath;
+            if (url.startsWith("http")) {
+                int idx = url.indexOf("/uploads/");
+                relativePath = idx != -1 ? url.substring(idx + "/uploads/".length()) : url;
+            } else if (url.startsWith("/uploads/")) {
+                relativePath = url.substring("/uploads/".length());
+            } else {
+                relativePath = url;
+            }
+            Path filePath = Paths.get("uploads").resolve(relativePath).normalize();
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            Resource resource = new UrlResource(filePath.toUri());
+            String filename = material.getTitle();
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
