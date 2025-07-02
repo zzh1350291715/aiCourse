@@ -78,7 +78,7 @@ export default {
   },
   data() {
     return {
-      defaultImage: 'https://via.placeholder.com/300x200?text=课程封面'
+      defaultImage: require('@/pic/classlogo.png')
     }
   },
   methods: {
